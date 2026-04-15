@@ -202,7 +202,6 @@ export const registerBrowseTools = (
               return `Post with ID "${id}" not found.`;
             }
             path = post.permalink?.replace(/\/$/, "") ?? `/r/${post.subreddit}/comments/${id}`;
-            return formatPostWithComments(post, [], comment_limit ?? 10);
           }
 
           const listingData = yield* client.get<
