@@ -9,7 +9,7 @@ import {
   type ListingResponse,
   type PostData,
 } from "../types.ts";
-import { formatError, formatSuccess } from "../utils.ts";
+import { runTool } from "../utils.ts";
 
 type UserAbout = {
   data?: {
@@ -75,8 +75,9 @@ export const registerUserTools = (
       idempotentHint: true,
       openWorldHint: true,
     },
-    async ({ username }) => {
-      const result = await runtime.runPromiseExit(
+    async ({ username }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* RedditClient;
           const data = yield* client.get<UserAbout>(`/user/${username}/about`);
@@ -84,10 +85,7 @@ export const registerUserTools = (
           if (!user) return `User u/${username} not found.`;
           return formatUser(user);
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 
   server.tool(
@@ -119,8 +117,9 @@ export const registerUserTools = (
       idempotentHint: false,
       openWorldHint: true,
     },
-    async ({ username, sort, t, limit, after }) => {
-      const result = await runtime.runPromiseExit(
+    async ({ username, sort, t, limit, after }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* RedditClient;
           const data = yield* client.get<ListingResponse<PostData>>(`/user/${username}/submitted`, {
@@ -137,10 +136,7 @@ export const registerUserTools = (
 
           return `Posts by u/${username}:\n\n${posts.map(formatUserPost).join("\n\n")}${pagination}`;
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 
   server.tool(
@@ -172,8 +168,9 @@ export const registerUserTools = (
       idempotentHint: false,
       openWorldHint: true,
     },
-    async ({ username, sort, t, limit, after }) => {
-      const result = await runtime.runPromiseExit(
+    async ({ username, sort, t, limit, after }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* RedditClient;
           const data = yield* client.get<ListingResponse<CommentData>>(
@@ -196,9 +193,6 @@ export const registerUserTools = (
             pagination
           );
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 };

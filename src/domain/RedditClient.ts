@@ -6,12 +6,6 @@ import type {
   RedditRateLimitError,
 } from "./errors.ts";
 
-export type RedditRequestError =
-  | RedditAuthError
-  | RedditApiError
-  | RedditRateLimitError
-  | RedditNotFoundError;
-
 export interface RedditClientService {
   /**
    * Performs an authenticated GET request to the Reddit API.

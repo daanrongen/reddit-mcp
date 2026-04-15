@@ -78,6 +78,8 @@ export const RedditClientLive = Layer.effect(
               );
             }
 
+            // TODO: add runtime validation (e.g. Zod or Effect/Schema) once
+            // per-endpoint schemas are defined — the cast here is unsafe.
             return response.json() as Promise<T>;
           },
           catch: (e) => {
