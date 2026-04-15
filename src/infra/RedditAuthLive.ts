@@ -7,15 +7,11 @@ import {
 } from "../config.ts";
 import { RedditAuthError } from "../domain/errors.ts";
 import { RedditAuth, type TokenState } from "../domain/RedditAuth.ts";
+import { buildUserAgent } from "./utils.ts";
 
 const REDDIT_TOKEN_URL = "https://www.reddit.com/api/v1/access_token";
 /** Refresh when token has fewer than 5 minutes remaining. */
 const REFRESH_BUFFER_MS = 5 * 60 * 1000;
-
-const buildUserAgent = (username: Option.Option<string>): string => {
-  const user = Option.getOrElse(username, () => "your-username");
-  return `reddit-mcp/1.0 by ${user}`;
-};
 
 const fetchToken = (
   clientId: string,

@@ -3,6 +3,12 @@ import { Effect, type ManagedRuntime } from "effect";
 import { z } from "zod";
 import type { RedditError } from "../../domain/errors.ts";
 import { RedditClient } from "../../domain/RedditClient.ts";
+import {
+  buildPaginationString,
+  type CommentData,
+  type ListingResponse,
+  type PostData,
+} from "../types.ts";
 import { formatError, formatSuccess } from "../utils.ts";
 
 type UserAbout = {
@@ -21,29 +27,6 @@ type UserAbout = {
       public_description?: string;
     };
   };
-};
-
-type PostData = {
-  id?: string;
-  title?: string;
-  author?: string;
-  score?: number;
-  url?: string;
-  subreddit?: string;
-  created_utc?: number;
-  permalink?: string;
-  num_comments?: number;
-};
-
-type CommentData = {
-  id?: string;
-  author?: string;
-  body?: string;
-  score?: number;
-  subreddit?: string;
-  created_utc?: number;
-  link_title?: string;
-  permalink?: string;
 };
 
 const formatUser = (u: NonNullable<UserAbout["data"]>): string => {
@@ -140,12 +123,7 @@ export const registerUserTools = (
       const result = await runtime.runPromiseExit(
         Effect.gen(function* () {
           const client = yield* RedditClient;
-          const data = yield* client.get<{
-            data?: {
-              children?: Array<{ data?: PostData }>;
-              after?: string | null;
-            };
-          }>(`/user/${username}/submitted`, {
+          const data = yield* client.get<ListingResponse<PostData>>(`/user/${username}/submitted`, {
             sort: sort ?? "new",
             t: t ?? "all",
             limit: limit ?? 25,
@@ -155,9 +133,7 @@ export const registerUserTools = (
           const posts = (data.data?.children ?? []).map((c) => c.data ?? {});
           if (!posts.length) return `u/${username} has no posts.`;
 
-          const pagination = data.data?.after
-            ? `\n\nMore results available. Use after="${data.data.after}" to fetch the next page.`
-            : "";
+          const pagination = buildPaginationString(data.data?.after);
 
           return `Posts by u/${username}:\n\n${posts.map(formatUserPost).join("\n\n")}${pagination}`;
         }),
@@ -200,24 +176,20 @@ export const registerUserTools = (
       const result = await runtime.runPromiseExit(
         Effect.gen(function* () {
           const client = yield* RedditClient;
-          const data = yield* client.get<{
-            data?: {
-              children?: Array<{ data?: CommentData }>;
-              after?: string | null;
-            };
-          }>(`/user/${username}/comments`, {
-            sort: sort ?? "new",
-            t: t ?? "all",
-            limit: limit ?? 25,
-            after,
-          });
+          const data = yield* client.get<ListingResponse<CommentData>>(
+            `/user/${username}/comments`,
+            {
+              sort: sort ?? "new",
+              t: t ?? "all",
+              limit: limit ?? 25,
+              after,
+            },
+          );
 
           const comments = (data.data?.children ?? []).map((c) => c.data ?? {});
           if (!comments.length) return `u/${username} has no comments.`;
 
-          const pagination = data.data?.after
-            ? `\n\nMore results available. Use after="${data.data.after}" to fetch the next page.`
-            : "";
+          const pagination = buildPaginationString(data.data?.after);
 
           return (
             `Comments by u/${username}:\n\n${comments.map(formatUserComment).join("\n\n")}` +

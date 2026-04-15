@@ -1,4 +1,4 @@
-import { Effect, Layer, Option } from "effect";
+import { Effect, Layer } from "effect";
 import { RedditUsernameConfig } from "../config.ts";
 import {
   RedditApiError,
@@ -8,13 +8,9 @@ import {
 } from "../domain/errors.ts";
 import { RedditAuth } from "../domain/RedditAuth.ts";
 import { RedditClient } from "../domain/RedditClient.ts";
+import { buildUserAgent } from "./utils.ts";
 
 const REDDIT_API_BASE = "https://oauth.reddit.com";
-
-const buildUserAgent = (username: Option.Option<string>): string => {
-  const user = Option.getOrElse(username, () => "your-username");
-  return `reddit-mcp/1.0 by ${user}`;
-};
 
 export const RedditClientLive = Layer.effect(
   RedditClient,

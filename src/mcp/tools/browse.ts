@@ -3,33 +3,13 @@ import { Effect, type ManagedRuntime } from "effect";
 import { z } from "zod";
 import type { RedditError } from "../../domain/errors.ts";
 import { RedditClient } from "../../domain/RedditClient.ts";
+import {
+  buildPaginationString,
+  type CommentData,
+  type ListingResponse,
+  type PostData,
+} from "../types.ts";
 import { formatError, formatSuccess } from "../utils.ts";
-
-type PostData = {
-  id?: string;
-  name?: string;
-  title?: string;
-  author?: string;
-  score?: number;
-  url?: string;
-  selftext?: string;
-  num_comments?: number;
-  subreddit?: string;
-  created_utc?: number;
-  permalink?: string;
-  is_self?: boolean;
-  link_flair_text?: string;
-};
-
-type CommentData = {
-  id?: string;
-  author?: string;
-  body?: string;
-  score?: number;
-  created_utc?: number;
-  replies?: { data?: { children?: Array<{ kind?: string; data?: CommentData }> } } | "";
-  depth?: number;
-};
 
 type SubredditAbout = {
   data?: {
@@ -123,19 +103,16 @@ export const registerBrowseTools = (
         Effect.gen(function* () {
           const client = yield* RedditClient;
           const feedPath = feed ?? "hot";
-          const data = yield* client.get<{
-            data?: {
-              children?: Array<{ data?: PostData }>;
-              after?: string | null;
-            };
-          }>(`/r/${subreddit}/${feedPath}`, { t: t ?? "day", limit: limit ?? 25, after });
+          const data = yield* client.get<ListingResponse<PostData>>(`/r/${subreddit}/${feedPath}`, {
+            t: t ?? "day",
+            limit: limit ?? 25,
+            after,
+          });
 
           const posts = (data.data?.children ?? []).map((c) => c.data ?? {});
           if (!posts.length) return `No posts found in r/${subreddit}.`;
 
-          const pagination = data.data?.after
-            ? `\n\nMore results available. Use after="${data.data.after}" to fetch the next page.`
-            : "";
+          const pagination = buildPaginationString(data.data?.after);
 
           return (
             `r/${subreddit} — ${feedPath} posts:\n\n${posts.map(formatPost).join("\n\n")}` +
