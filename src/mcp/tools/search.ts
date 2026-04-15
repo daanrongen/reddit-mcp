@@ -4,7 +4,7 @@ import { z } from "zod";
 import type { RedditError } from "../../domain/errors.ts";
 import { RedditClient } from "../../domain/RedditClient.ts";
 import type { ListingResponse, PostData } from "../types.ts";
-import { formatError, formatSuccess } from "../utils.ts";
+import { runTool } from "../utils.ts";
 
 const formatPost = (post: PostData): string => {
   const lines = [
@@ -60,8 +60,9 @@ export const registerSearchTools = (
       idempotentHint: true,
       openWorldHint: true,
     },
-    async ({ q, subreddit, sort, t, limit }) => {
-      const result = await runtime.runPromiseExit(
+    async ({ q, subreddit, sort, t, limit }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* RedditClient;
           const path = subreddit ? `/r/${subreddit}/search` : "/search";
@@ -77,10 +78,7 @@ export const registerSearchTools = (
           if (!posts.length) return `No posts found for query: "${q}"`;
           return `Search results for "${q}"${subreddit ? ` in r/${subreddit}` : ""}:\n\n${posts.map(formatPost).join("\n\n")}`;
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 
   server.tool(
@@ -103,8 +101,9 @@ export const registerSearchTools = (
       idempotentHint: true,
       openWorldHint: true,
     },
-    async ({ q, limit }) => {
-      const result = await runtime.runPromiseExit(
+    async ({ q, limit }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* RedditClient;
           const data = yield* client.get<{
@@ -135,9 +134,6 @@ export const registerSearchTools = (
 
           return `Subreddits matching "${q}":\n\n${lines.join("\n\n")}`;
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 };

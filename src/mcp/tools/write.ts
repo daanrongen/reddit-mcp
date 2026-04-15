@@ -4,7 +4,7 @@ import { z } from "zod";
 import { RedditRefreshTokenConfig } from "../../config.ts";
 import type { RedditError } from "../../domain/errors.ts";
 import { RedditClient } from "../../domain/RedditClient.ts";
-import { formatError, formatSuccess, WRITE_AUTH_ERROR } from "../utils.ts";
+import { runTool, WRITE_AUTH_ERROR } from "../utils.ts";
 
 /**
  * Guard that checks whether REDDIT_REFRESH_TOKEN is configured before
@@ -42,9 +42,6 @@ type SubmitCommentResponse = {
   };
 };
 
-type VoteResponse = Record<string, never>;
-type SaveResponse = Record<string, never>;
-
 export const registerWriteTools = (
   server: McpServer,
   runtime: ManagedRuntime.ManagedRuntime<RedditClient, RedditError>,
@@ -75,8 +72,9 @@ export const registerWriteTools = (
       idempotentHint: false,
       openWorldHint: true,
     },
-    async ({ subreddit, title, kind, text, url, nsfw, spoiler, flair_id, flair_text }) => {
-      const result = await runtime.runPromiseExit(
+    async ({ subreddit, title, kind, text, url, nsfw, spoiler, flair_id, flair_text }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const hasToken = yield* requireRefreshToken;
           if (!hasToken) return WRITE_AUTH_ERROR;
@@ -109,10 +107,7 @@ export const registerWriteTools = (
 
           return `Post submitted successfully!\nID: ${postId}\nURL: ${postUrl}`;
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 
   server.tool(
@@ -134,8 +129,9 @@ export const registerWriteTools = (
       idempotentHint: false,
       openWorldHint: true,
     },
-    async ({ parent_id, text }) => {
-      const result = await runtime.runPromiseExit(
+    async ({ parent_id, text }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const hasToken = yield* requireRefreshToken;
           if (!hasToken) return WRITE_AUTH_ERROR;
@@ -157,10 +153,7 @@ export const registerWriteTools = (
 
           return `Comment submitted successfully!\nID: ${commentId}${permalink ? `\nURL: https://reddit.com${permalink}` : ""}`;
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 
   server.tool(
@@ -184,22 +177,20 @@ export const registerWriteTools = (
       idempotentHint: true,
       openWorldHint: true,
     },
-    async ({ id, dir }) => {
-      const result = await runtime.runPromiseExit(
+    async ({ id, dir }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const hasToken = yield* requireRefreshToken;
           if (!hasToken) return WRITE_AUTH_ERROR;
 
           const client = yield* RedditClient;
-          yield* client.post<VoteResponse>("/api/vote", { id, dir });
+          yield* client.post<void>("/api/vote", { id, dir });
 
           const label = dir === 1 ? "Upvoted" : dir === -1 ? "Downvoted" : "Vote removed from";
           return `${label} ${id}`;
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 
   server.tool(
@@ -221,21 +212,19 @@ export const registerWriteTools = (
       idempotentHint: true,
       openWorldHint: true,
     },
-    async ({ id, save }) => {
-      const result = await runtime.runPromiseExit(
+    async ({ id, save }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const hasToken = yield* requireRefreshToken;
           if (!hasToken) return WRITE_AUTH_ERROR;
 
           const client = yield* RedditClient;
           const path = save ? "/api/save" : "/api/unsave";
-          yield* client.post<SaveResponse>(path, { id });
+          yield* client.post<void>(path, { id });
 
           return `${save ? "Saved" : "Unsaved"} ${id}`;
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 };

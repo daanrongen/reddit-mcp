@@ -9,7 +9,7 @@ import {
   type ListingResponse,
   type PostData,
 } from "../types.ts";
-import { formatError, formatSuccess } from "../utils.ts";
+import { runTool } from "../utils.ts";
 
 type SubredditAbout = {
   data?: {
@@ -98,8 +98,9 @@ export const registerBrowseTools = (
       idempotentHint: false,
       openWorldHint: true,
     },
-    async ({ subreddit, feed, t, limit, after }) => {
-      const result = await runtime.runPromiseExit(
+    async ({ subreddit, feed, t, limit, after }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* RedditClient;
           const feedPath = feed ?? "hot";
@@ -119,10 +120,7 @@ export const registerBrowseTools = (
             pagination
           );
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 
   server.tool(
@@ -156,10 +154,15 @@ export const registerBrowseTools = (
     },
     async ({ id, url, comment_limit }) => {
       if (!id && !url) {
-        return formatSuccess("Provide either 'id' or 'url' to fetch a post.");
+        return {
+          content: [
+            { type: "text" as const, text: "Provide either 'id' or 'url' to fetch a post." },
+          ],
+        };
       }
 
-      const result = await runtime.runPromiseExit(
+      return runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* RedditClient;
 
@@ -199,8 +202,6 @@ export const registerBrowseTools = (
           return formatPostWithComments(post, comments, comment_limit ?? 10);
         }),
       );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
     },
   );
 
@@ -236,8 +237,9 @@ export const registerBrowseTools = (
       idempotentHint: true,
       openWorldHint: true,
     },
-    async ({ subreddit, post_id, sort, limit, depth }) => {
-      const result = await runtime.runPromiseExit(
+    async ({ subreddit, post_id, sort, limit, depth }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* RedditClient;
           const data = yield* client.get<
@@ -267,10 +269,7 @@ export const registerBrowseTools = (
 
           return `Comments for r/${subreddit}/comments/${post_id} (sort: ${sort ?? "confidence"}):\n\n${formatted}`;
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 
   server.tool(
@@ -286,8 +285,9 @@ export const registerBrowseTools = (
       idempotentHint: true,
       openWorldHint: true,
     },
-    async ({ subreddit }) => {
-      const result = await runtime.runPromiseExit(
+    async ({ subreddit }) =>
+      runTool(
+        runtime,
         Effect.gen(function* () {
           const client = yield* RedditClient;
           const [aboutData, rulesData] = yield* Effect.all(
@@ -327,10 +327,7 @@ export const registerBrowseTools = (
 
           return lines.join("\n");
         }),
-      );
-      if (result._tag === "Failure") return formatError(result.cause);
-      return formatSuccess(result.value);
-    },
+      ),
   );
 };
 
