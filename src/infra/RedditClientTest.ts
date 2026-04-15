@@ -1,4 +1,4 @@
-import { Effect, Layer, Option } from "effect";
+import { Effect, Layer } from "effect";
 import { RedditApiError, RedditNotFoundError } from "../domain/errors.ts";
 import { RedditAuth } from "../domain/RedditAuth.ts";
 import { RedditClient } from "../domain/RedditClient.ts";

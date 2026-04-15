@@ -59,8 +59,8 @@ const fetchToken = (
         accessToken: json.access_token,
         expiresAt: Date.now() + (json.expires_in ?? 3600) * 1000,
         scope: json.scope ?? "",
-        refreshToken: grantParams["refresh_token"]
-          ? Option.some(grantParams["refresh_token"])
+        refreshToken: grantParams.refresh_token
+          ? Option.some(grantParams.refresh_token)
           : Option.none(),
       } satisfies TokenState;
     },

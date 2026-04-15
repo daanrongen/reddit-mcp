@@ -159,9 +159,7 @@ export const registerUserTools = (
             ? `\n\nMore results available. Use after="${data.data.after}" to fetch the next page.`
             : "";
 
-          return (
-            `Posts by u/${username}:\n\n${posts.map(formatUserPost).join("\n\n")}` + pagination
-          );
+          return `Posts by u/${username}:\n\n${posts.map(formatUserPost).join("\n\n")}${pagination}`;
         }),
       );
       if (result._tag === "Failure") return formatError(result.cause);
