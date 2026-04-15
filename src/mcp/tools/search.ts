@@ -3,28 +3,8 @@ import { Effect, type ManagedRuntime } from "effect";
 import { z } from "zod";
 import type { RedditError } from "../../domain/errors.ts";
 import { RedditClient } from "../../domain/RedditClient.ts";
+import type { ListingResponse, PostData } from "../types.ts";
 import { formatError, formatSuccess } from "../utils.ts";
-
-type PostData = {
-  id?: string;
-  title?: string;
-  author?: string;
-  score?: number;
-  url?: string;
-  selftext?: string;
-  num_comments?: number;
-  subreddit?: string;
-  created_utc?: number;
-  permalink?: string;
-  is_self?: boolean;
-};
-
-type ListingResponse = {
-  data?: {
-    children?: Array<{ data?: PostData }>;
-    after?: string | null;
-  };
-};
 
 const formatPost = (post: PostData): string => {
   const lines = [
@@ -41,7 +21,7 @@ const formatPost = (post: PostData): string => {
   return lines.join("\n");
 };
 
-const extractPosts = (response: ListingResponse): PostData[] =>
+const extractPosts = (response: ListingResponse<PostData>): PostData[] =>
   (response.data?.children ?? []).map((c) => c.data ?? {});
 
 export const registerSearchTools = (
@@ -85,7 +65,7 @@ export const registerSearchTools = (
         Effect.gen(function* () {
           const client = yield* RedditClient;
           const path = subreddit ? `/r/${subreddit}/search` : "/search";
-          const data = yield* client.get<ListingResponse>(path, {
+          const data = yield* client.get<ListingResponse<PostData>>(path, {
             q,
             sort: sort ?? "relevance",
             t: t ?? "all",
