@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { Effect } from "effect";
-import { RedditClient } from "../../src/domain/RedditClient.ts";
-import { makeRedditClientTest, RedditClientTest } from "../../src/infra/RedditClientTest.ts";
+import { makeRedditClientTest, RedditClientTest } from "../infra/RedditClientTest.ts";
+import { RedditClient } from "./RedditClient.ts";
 
 describe("search tools data", () => {
   it("search_posts returns a listing response", async () => {

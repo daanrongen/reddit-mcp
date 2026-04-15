@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { Effect } from "effect";
-import { RedditAuth } from "../../src/domain/RedditAuth.ts";
-import { RedditAuthTest } from "../../src/infra/RedditClientTest.ts";
+import { RedditAuthTest } from "../infra/RedditClientTest.ts";
+import { RedditAuth } from "./RedditAuth.ts";
 
 describe("RedditAuthTest", () => {
   it("returns a test access token", async () => {

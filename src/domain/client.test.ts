@@ -1,12 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import { Effect } from "effect";
-import { RedditApiError, RedditNotFoundError } from "../../src/domain/errors.ts";
-import { RedditClient } from "../../src/domain/RedditClient.ts";
 import {
   makeNotFoundTest,
   makeRedditClientTest,
   RedditClientTest,
-} from "../../src/infra/RedditClientTest.ts";
+} from "../infra/RedditClientTest.ts";
+import { RedditApiError, RedditNotFoundError } from "./errors.ts";
+import { RedditClient } from "./RedditClient.ts";
 
 describe("RedditClientTest — default fixtures", () => {
   it("returns subreddit posts from hot feed", async () => {
