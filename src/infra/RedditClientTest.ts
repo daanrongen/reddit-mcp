@@ -1,4 +1,4 @@
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Ref } from "effect";
 import { RedditApiError, RedditNotFoundError } from "../domain/errors.ts";
 import { RedditAuth } from "../domain/RedditAuth.ts";
 import { RedditClient } from "../domain/RedditClient.ts";
@@ -11,29 +11,50 @@ export type RedditTestHandlers = Map<string, unknown>;
  * RedditApiError so tests can verify error paths.
  */
 export const makeRedditClientTest = (handlers: RedditTestHandlers = new Map()) =>
-  Layer.succeed(RedditClient, {
-    get: <T>(path: string) => {
-      for (const [prefix, data] of handlers) {
-        if (path.startsWith(prefix)) {
-          return Effect.succeed(data as T);
-        }
-      }
-      return Effect.fail(new RedditApiError({ message: `No test handler for path: ${path}` }));
-    },
-    post: <T>(path: string) => {
-      for (const [prefix, data] of handlers) {
-        if (path.startsWith(prefix)) {
-          return Effect.succeed(data as T);
-        }
-      }
-      return Effect.fail(new RedditApiError({ message: `No test handler for POST path: ${path}` }));
-    },
-  });
+  Layer.effect(
+    RedditClient,
+    Effect.gen(function* () {
+      const handlersRef = yield* Ref.make(handlers);
+
+      return RedditClient.of({
+        get: <T>(path: string) =>
+          Effect.gen(function* () {
+            const h = yield* Ref.get(handlersRef);
+            for (const [prefix, data] of h) {
+              if (path.startsWith(prefix)) {
+                return data as T;
+              }
+            }
+            return yield* Effect.fail(
+              new RedditApiError({ message: `No test handler for path: ${path}` }),
+            );
+          }),
+
+        post: <T>(path: string) =>
+          Effect.gen(function* () {
+            const h = yield* Ref.get(handlersRef);
+            for (const [prefix, data] of h) {
+              if (path.startsWith(prefix)) {
+                return data as T;
+              }
+            }
+            return yield* Effect.fail(
+              new RedditApiError({ message: `No test handler for POST path: ${path}` }),
+            );
+          }),
+      });
+    }),
+  );
 
 /** Test adapter for RedditAuth — always returns a static test token. */
-export const RedditAuthTest = Layer.succeed(RedditAuth, {
-  getAccessToken: () => Effect.succeed("test-access-token"),
-});
+export const RedditAuthTest = Layer.effect(
+  RedditAuth,
+  Effect.gen(function* () {
+    return RedditAuth.of({
+      getAccessToken: () => Effect.succeed("test-access-token"),
+    });
+  }),
+);
 
 /** Default test layer with common fixture responses. */
 export const RedditClientTest = makeRedditClientTest(
@@ -104,18 +125,23 @@ export const RedditClientTest = makeRedditClientTest(
 );
 
 export const makeNotFoundTest = (path: string) =>
-  Layer.succeed(RedditClient, {
-    get: <T>(_path: string) =>
-      Effect.fail(new RedditNotFoundError({ resource: path })) as Effect.Effect<
-        T,
-        RedditNotFoundError
-      >,
-    post: <T>(_path: string) =>
-      Effect.fail(new RedditNotFoundError({ resource: path })) as Effect.Effect<
-        T,
-        RedditNotFoundError
-      >,
-  });
+  Layer.effect(
+    RedditClient,
+    Effect.gen(function* () {
+      return RedditClient.of({
+        get: <T>(_path: string) =>
+          Effect.fail(new RedditNotFoundError({ resource: path })) as Effect.Effect<
+            T,
+            RedditNotFoundError
+          >,
+        post: <T>(_path: string) =>
+          Effect.fail(new RedditNotFoundError({ resource: path })) as Effect.Effect<
+            T,
+            RedditNotFoundError
+          >,
+      });
+    }),
+  );
 
 /** Merges RedditClientTest and RedditAuthTest for convenience. */
 export const RedditTestLayer = Layer.mergeAll(RedditClientTest, RedditAuthTest);
