@@ -1,7 +1,7 @@
 {
   "name": "@daanrongen/reddit-mcp",
-  "version": "1.1.0",
-  "description": "MCP server for Reddit \u2014 search posts, browse subreddits, read comments, and write with OAuth2 user auth over stdio",
+  "version": "1.2.0",
+  "description": "MCP server for Reddit — search posts, browse subreddits, read comments, and write with OAuth2 user auth over stdio",
   "type": "module",
   "bin": {
     "reddit-mcp": "./dist/main.js"
