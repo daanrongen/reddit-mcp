@@ -1,6 +1,6 @@
 {
   "name": "@daanrongen/reddit-mcp",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "MCP server for Reddit — search posts, browse subreddits, read comments, and write with OAuth2 user auth over stdio",
   "type": "module",
   "bin": {
